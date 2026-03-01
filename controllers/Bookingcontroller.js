@@ -5,22 +5,23 @@ export const createBooking = async (req, res) => {
     try {
         const { name, email, phone, interest, message } = req.body;
 
-        // 1. Save to MongoDB (Ye perfectly kaam kar raha hai)
+        // 1. Save to MongoDB
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer (RENDER KE LIYE FIXED CODE - PORT 587)
+        // 2. Setup Nodemailer (IPv4 FIX FOR RENDER)
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 587,
-            secure: false, // 587 ke liye false rakhte hain
-            requireTLS: true, // Render ko force karega connect karne ke liye
+            secure: false,
+            requireTLS: true,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             },
             tls: {
                 rejectUnauthorized: false 
-            }
+            },
+            family: 4 // <--- SABSE IMPORTANT LINE: Ye Render ko IPv6 use karne se rokegi aur error fix karegi!
         });
 
         // 3. Email Template
