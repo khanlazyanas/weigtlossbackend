@@ -1,5 +1,10 @@
 import Booking from '../model/Booking.js';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// 🔥 RENDER BRAMHASTRA (Ultimate Fix) 🔥
+// Node.js ko zabardasti sirf IPv4 use karne ka order (Kyunki Render IPv6 support nahi karta)
+dns.setDefaultResultOrder('ipv4first');
 
 export const createBooking = async (req, res) => {
     try {
@@ -8,20 +13,15 @@ export const createBooking = async (req, res) => {
         // 1. Save to MongoDB
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer (IPv4 FIX FOR RENDER)
+        // 2. Setup Nodemailer
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            requireTLS: true,
+            port: 465,         // Wapas 465 kar diya jo Gmail ke liye sabse secure hai
+            secure: true, 
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
-            },
-            tls: {
-                rejectUnauthorized: false 
-            },
-            family: 4 // <--- SABSE IMPORTANT LINE: Ye Render ko IPv6 use karne se rokegi aur error fix karegi!
+            }
         });
 
         // 3. Email Template
@@ -43,6 +43,7 @@ export const createBooking = async (req, res) => {
             `
         };
 
+        // 4. Send Email
         await transporter.sendMail(mailOptions);
 
         res.status(201).json({ success: true, message: "Protocol Initialized & Email Sent" });
