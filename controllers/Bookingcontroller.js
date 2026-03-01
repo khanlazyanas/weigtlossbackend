@@ -2,8 +2,7 @@ import Booking from '../model/Booking.js';
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 
-// 🔥 RENDER BRAMHASTRA (Ultimate Fix) 🔥
-// Node.js ko zabardasti sirf IPv4 use karne ka order (Kyunki Render IPv6 support nahi karta)
+// 🔥 RENDER IPv6 FIX 🔥
 dns.setDefaultResultOrder('ipv4first');
 
 export const createBooking = async (req, res) => {
@@ -13,18 +12,24 @@ export const createBooking = async (req, res) => {
         // 1. Save to MongoDB
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer
+        // 2. Setup Nodemailer (PORT 587 + IPv4 Combined)
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,         // Wapas 465 kar diya jo Gmail ke liye sabse secure hai
-            secure: true, 
+            port: 587,         // Google ko bypass karne ke liye STARTTLS port
+            secure: false,     // 587 ke liye false
+            requireTLS: true,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
-            }
+            },
+            tls: {
+                rejectUnauthorized: false 
+            },
+            connectionTimeout: 20000, // 20 seconds tak wait karega timeout hone se pehle
+            greetingTimeout: 20000
         });
 
-        // 3. Email Template
+        // 3. Professional Email Template
         const mailOptions = {
             from: `"WeightLossDoc System" <${process.env.EMAIL_USER}>`,
             to: process.env.OWNER_EMAIL,
