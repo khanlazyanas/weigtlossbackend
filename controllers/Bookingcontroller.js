@@ -5,25 +5,25 @@ export const createBooking = async (req, res) => {
     try {
         const { name, email, phone, interest, message } = req.body;
 
-        // 1. Save to MongoDB
+        // 1. Save to MongoDB (Ye perfectly kaam kar raha hai)
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer (FIXED FOR RENDER & GMAIL)
+        // 2. Setup Nodemailer (RENDER KE LIYE FIXED CODE - PORT 587)
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // 465 port ke liye hamesha true hota hai
+            port: 587,
+            secure: false, // 587 ke liye false rakhte hain
+            requireTLS: true, // Render ko force karega connect karne ke liye
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             },
             tls: {
-                // Ye sabse important line hai jo Render par error aane se rokegi
                 rejectUnauthorized: false 
             }
         });
 
-        // 3. Professional Email Template
+        // 3. Email Template
         const mailOptions = {
             from: `"WeightLossDoc System" <${process.env.EMAIL_USER}>`,
             to: process.env.OWNER_EMAIL,
@@ -42,13 +42,11 @@ export const createBooking = async (req, res) => {
             `
         };
 
-        // 4. Send Email
         await transporter.sendMail(mailOptions);
 
         res.status(201).json({ success: true, message: "Protocol Initialized & Email Sent" });
     } catch (error) {
-        // Console error add kiya hai taaki Render Logs mein exact problem dikhe
-        console.error("❌ Booking/Email Error: ", error); 
-        res.status(500).json({ success: false, error: error.message || "Failed to send email." });
+        console.error("❌ Email Error: ", error);
+        res.status(500).json({ success: false, error: "Database saved, but email failed." });
     }
 };
