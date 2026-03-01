@@ -1,4 +1,3 @@
-// YAHAN .js LAGANA HAI aur folder ka naam 'models' check karein 👇
 import Booking from '../model/Booking.js';
 import nodemailer from 'nodemailer';
 
@@ -9,12 +8,18 @@ export const createBooking = async (req, res) => {
         // 1. Save to MongoDB
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer
+        // 2. Setup Nodemailer (FIXED FOR RENDER & GMAIL)
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // 465 port ke liye hamesha true hota hai
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
+            },
+            tls: {
+                // Ye sabse important line hai jo Render par error aane se rokegi
+                rejectUnauthorized: false 
             }
         });
 
@@ -37,10 +42,13 @@ export const createBooking = async (req, res) => {
             `
         };
 
+        // 4. Send Email
         await transporter.sendMail(mailOptions);
 
         res.status(201).json({ success: true, message: "Protocol Initialized & Email Sent" });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        // Console error add kiya hai taaki Render Logs mein exact problem dikhe
+        console.error("❌ Booking/Email Error: ", error); 
+        res.status(500).json({ success: false, error: error.message || "Failed to send email." });
     }
 };
