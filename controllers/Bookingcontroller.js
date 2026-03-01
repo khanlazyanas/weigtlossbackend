@@ -1,38 +1,20 @@
 import Booking from '../model/Booking.js';
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+import { Resend } from 'resend';
 
-// 🔥 RENDER IPv6 FIX 🔥
-dns.setDefaultResultOrder('ipv4first');
+// Resend API initialize karna
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const createBooking = async (req, res) => {
     try {
         const { name, email, phone, interest, message } = req.body;
 
-        // 1. Save to MongoDB
+        // 1. Save to MongoDB (Ye toh perfect chal hi raha hai)
         const newBooking = await Booking.create({ name, email, phone, interest, message });
 
-        // 2. Setup Nodemailer (PORT 587 + IPv4 Combined)
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,         // Google ko bypass karne ke liye STARTTLS port
-            secure: false,     // 587 ke liye false
-            requireTLS: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            tls: {
-                rejectUnauthorized: false 
-            },
-            connectionTimeout: 20000, // 20 seconds tak wait karega timeout hone se pehle
-            greetingTimeout: 20000
-        });
-
-        // 3. Professional Email Template
-        const mailOptions = {
-            from: `"WeightLossDoc System" <${process.env.EMAIL_USER}>`,
-            to: process.env.OWNER_EMAIL,
+        // 2. Send Email via Resend HTTP API (Render isko block nahi kar sakta)
+        const { data, error } = await resend.emails.send({
+            from: 'WeightLossDoc <onboarding@resend.dev>', // Ye testing ke liye Resend ka official sender hai
+            to: process.env.OWNER_EMAIL, // Yahan apna wo email daalein jisse aapne Resend par login kiya hai
             subject: `🚨 NEW INTAKE: ${name}`,
             html: `
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
@@ -42,18 +24,21 @@ export const createBooking = async (req, res) => {
                     <p><strong>Phone:</strong> ${phone}</p>
                     <p><strong>Program:</strong> ${interest}</p>
                     <p><strong>Message:</strong> ${message || 'No message provided'}</p>
-                    <hr />
-                    <p style="font-size: 10px; color: #999;">This is an automated clinical notification.</p>
                 </div>
             `
-        };
+        });
 
-        // 4. Send Email
-        await transporter.sendMail(mailOptions);
+        // Agar Resend API ne koi error diya
+        if (error) {
+            console.error("❌ Resend API Error:", error);
+            return res.status(500).json({ success: false, error: "Database saved, but email API failed." });
+        }
 
+        // Agar sab successfully ho gaya
         res.status(201).json({ success: true, message: "Protocol Initialized & Email Sent" });
+
     } catch (error) {
-        console.error("❌ Email Error: ", error);
-        res.status(500).json({ success: false, error: "Database saved, but email failed." });
+        console.error("❌ Backend Error: ", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };
