@@ -16,7 +16,7 @@ const app = express();
 // --- Setup Middleware ---
 app.use(cors({
     origin: process.env.FRONTEND_URL,
-    methods: ['POST', 'GET', 'OPTIONS'], // OPTIONS added for preflight requests
+    methods: ['POST', 'GET', 'OPTIONS', 'DELETE'], // OPTIONS added for preflight requests
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'] // Allow Authorization header
 }));
