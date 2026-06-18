@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken'; // NEW: Import jwt for token generation
 import connectDB from './config/db.js';
 import bookingRoutes from './routes/bookingroutes.js';
 import transformationRoutes from './routes/transformationRoutes.js';
+import leadRoutes from './routes/leadRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -23,6 +24,7 @@ app.use(express.json());
 
 // --- Register Custom API Routes ---
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/leads', leadRoutes);
 
 // === NEW: Secure Admin Verification Route ===
 // Frontend Gatekeeper modal is route par password bhejega
