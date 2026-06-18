@@ -47,3 +47,17 @@ export const getLeads = asyncHandler(async (req, res) => {
 
   res.json(formattedLeads);
 });
+
+
+export const deleteLead = asyncHandler(async (req, res) => {
+  const lead = await Lead.findById(req.params.id);
+
+  if (!lead) {
+    res.status(404);
+    throw new Error('Lead not found');
+  }
+
+  await lead.deleteOne(); // MongoDB se delete kar dega
+
+  res.status(200).json({ id: req.params.id, message: 'Lead permanently deleted' });
+});

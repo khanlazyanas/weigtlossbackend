@@ -1,32 +1,38 @@
 import express from 'express';
-import { createLead, getLeads } from '../controllers/leadController.js';
-import jwt from 'jsonwebtoken'; // <-- JWT Import zaroori hai
+import { createLead, getLeads, deleteLead } from '../controllers/leadController.js'; // Imported deleteLead
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-// 1. Public Route: Isme koi lock nahi hai, koi bhi form submit kar sakta hai
+// 1. Public Route: Allows frontend lead submission without authentication
 router.post('/', createLead);
 
-// 2. Private Route: JWT Verification (Fixed)
-router.get('/', (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+// === SECURITY MIDDLEWARE (Guard for private routes) ===
+// We extract the token logic here so it can protect multiple routes easily
+const protect = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
 
-  // Agar token nahi mila
+  // If no token is found
   if (!token) { 
     return res.status(401).json({ message: 'Unauthorized Access. No Token provided.' });
   }
 
   try {
-    // Yahan hum token ko decrypt/verify kar rahe hain aapke OWNER_SECRET_KEY ke sath
+    // Decrypting/verifying the token with your OWNER_SECRET_KEY
     const decoded = jwt.verify(token, process.env.OWNER_SECRET_KEY);
     
-    // Agar verify ho gaya, toh aage jaane do
+    // If verification passes, proceed to the requested controller
     next(); 
   } catch (error) {
-    // Agar token galat ya expire ho gaya hai
+    // If token is tampered or expired
     console.error("Token verification failed:", error.message);
     return res.status(401).json({ message: 'Unauthorized Access. Invalid or Expired Token.' });
   }
-}, getLeads);
+};
+
+// 2. Private Routes (Both protected by the 'protect' middleware)
+router.get('/', protect, getLeads);
+router.delete('/:id', protect, deleteLead); // NEW: Secure delete route
 
 export default router;
